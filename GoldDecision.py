@@ -1,54 +1,86 @@
-import requests
-from bs4 import BeautifulSoup
-from tabulate import tabulate
+import mysql.connector
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from time import sleep
 
-def split_and_wrap(data):
-    # Tách dữ liệu bằng dấu cách
-    parts = data.split()
-    # Kiểm tra xem có 2 dữ liệu hay không
-    if len(parts) == 2:
-        # Nếu có, đặt dữ liệu thứ 2 xuống dòng
-        wrapped_text = f"{parts[0]}\n{parts[1]}"
-    else:
-        # Nếu không, giữ nguyên dữ liệu
-        wrapped_text = data
-    return wrapped_text
+# Tạo một cấu hình cho trình duyệt Chrome
+chrome_options = webdriver.ChromeOptions()
 
-# Tải nội dung của trang web
-url = 'https://bieudogiavang.vn/gia-vang-sjc'
-response = requests.get(url)
+# Thêm tùy chọn để ngăn thông báo DevTools hiển thị trong terminal
+chrome_options.add_argument('--log-level=3')
 
-# Khởi tạo danh sách table_data
-table_data = []
+# Khởi tạo trình duyệt với cấu hình
+driver = webdriver.Chrome(options=chrome_options)
 
-# Kiểm tra xem yêu cầu có thành công không
-if response.status_code == 200:
-    # Phân tích nội dung HTML bằng BeautifulSoup
-    soup = BeautifulSoup(response.text, 'html.parser')
+# Mở trang web
+driver.get("https://webgia.com/gia-vang/sjc/")
 
-    # Tìm bảng đầu tiên trong trang web
-    table = soup.find('table')
+config = {
+    "host": "localhost",
+    "port": "3306",
+    "user": "root",
+    "password": "123456",
+    "database": "dss"
+}
+connection = mysql.connector.connect(**config)
+def findBody():
+    loai_vang, mua_vao, ban_ra = [], [], []  # Di chuyển khởi tạo danh sách ra khỏi vòng lặp
+    
+    tr_elements = driver.find_elements(By.XPATH, "//table[@class='table table-radius table-hover']//tr")
+    # In ra nội dung của phần tử đầu tiên
+    for tr in tr_elements:
+        td_elements = tr.find_elements(By.TAG_NAME, "td")
+        
+        if td_elements:
+            loai_vang.append(td_elements[0].text)
+            mua_vao.append(td_elements[1].text)
+            ban_ra.append(td_elements[2].text)
+    return loai_vang,mua_vao,ban_ra
+def findHeader():
+    # Tìm tất cả các ô dữ liệu trong bảng
+    thead_element = driver.find_element(By.XPATH, "//table[@class='table table-radius table-hover']//tbody")
+    th_elements = thead_element.find_elements(By.TAG_NAME, "th")
+    headers=[]
+    for th_element in th_elements:
+        headers.append(th_element.text)
+    return headers
+def InsertDB():
+    khu_vuc=findHeader()
+    loai_vang, mua_vao, ban_ra = findBody()
+    cursor = connection.cursor()
+    querry="INSERT INTO golddss (Khu_vuc, Loai_vang, Mua_vao, Ban_ra) VALUES (%s, %s, %s, %s)"
+    for i in range(len(loai_vang)):
+        if i<=7:
+            j=0
+            cursor.execute(querry,(khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
+        else:
+            j+=1
+            cursor.execute(querry,(khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
+    connection.commit()
+    print(cursor.rowcount, "record(s) were inserted.")
+def getData(data):
+    cursor = connection.cursor()
+    cursor.execute(f"SELECT * FROM {data}")
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+    cursor.close()
+def ConnectDB(data):
+        # Thông tin kết nối
+    try:
+        if connection.is_connected():
+            print("Kết nối thành công!")
+            InsertDB()
+            getData(data)
+        else:
+            print("Kết nối không thành công!")
+    except mysql.connector.Error as error:
+        print("Lỗi khi kết nối đến cơ sở dữ liệu:", error)
 
-    # Duyệt qua các dòng của bảng
-    for row in table.find_all('tr'):
-        # Khởi tạo danh sách chứa dữ liệu của mỗi dòng
-        row_data = []
-
-        # Duyệt qua các ô dữ liệu trong dòng
-        for cell in row.find_all(['td', 'th']):
-            # Lấy nội dung của ô và chuẩn hóa
-            cell_text = ' '.join(cell.get_text().split())
-            # Nếu là cột 3 hoặc cột 4, thực hiện tách và đặt xuống dòng
-            if len(row_data) == 3 or len(row_data) == 4:
-                cell_text = split_and_wrap(cell_text)
-            row_data.append(cell_text)
-
-        # Nếu row_data không rỗng, thêm vào table_data
-        if any(row_data):
-            table_data.append(row_data)
-
-    # In bảng với tabulate
-    headers = table_data[0]  # Sử dụng dòng đầu tiên làm header
-    print(tabulate(table_data[1:], headers=headers, tablefmt='pretty'))
-else:
-    print("Không thể kết nối đến trang web.")
+    finally:
+        # Đóng kết nối sau khi sử dụng xong
+        if 'connection' in locals() and connection.is_connected():
+            connection.close()
+            print("Kết nối đã được đóng.")
+if __name__=='__main__':
+    ConnectDB('golddss')
