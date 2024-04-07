@@ -2,16 +2,12 @@ import mysql.connector
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
-
 # Tạo một cấu hình cho trình duyệt Chrome
 chrome_options = webdriver.ChromeOptions()
-
 # Thêm tùy chọn để ngăn thông báo DevTools hiển thị trong terminal
 chrome_options.add_argument('--log-level=3')
-
 # Khởi tạo trình duyệt với cấu hình
 driver = webdriver.Chrome(options=chrome_options)
-
 # Mở trang web
 driver.get("https://webgia.com/gia-vang/sjc/")
 
