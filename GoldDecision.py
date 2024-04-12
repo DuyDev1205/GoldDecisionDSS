@@ -26,22 +26,23 @@ def findHeader(driver):
 def insertDB(driver):
     khu_vuc=findHeader(driver)
     loai_vang, mua_vao, ban_ra = findBody(driver)
+    date=getDate()
     cursor = connection.cursor()
-    querry="INSERT INTO golddss (Khu_vuc, Loai_vang, Mua_vao, Ban_ra) VALUES (%s, %s, %s, %s)"
+    querry="INSERT INTO golddss (date,Khu_vuc, Loai_vang, Mua_vao, Ban_ra) VALUES (%s,%s, %s, %s, %s)"
     reset_count="ALTER TABLE golddss AUTO_INCREMENT = 1"
     cursor.execute(reset_count)
     for i in range(len(loai_vang)):
         if i<=7:
             j=0
-            cursor.execute(querry,(khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
+            cursor.execute(querry,(date[i],khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
         else:
             j+=1
-            cursor.execute(querry,(khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
+            cursor.execute(querry,(date[i],khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
     connection.commit()
     print(cursor.rowcount, "record(s) were inserted.")
 def getData(data):
     cursor = connection.cursor()
-    cursor.execute(f"SELECT * FROM {data}")
+    cursor.execute(f"SELECT * FROM golddss ORDER BY date ASC LIMIT 1")
     rows = cursor.fetchall()
     for row in rows:
         print(row)
@@ -56,7 +57,7 @@ def getDate():
     date_list = []
     # Tạo đối tượng cursor
     cursor = connection.cursor()
-    cursor.execute("SELECT date FROM test_dss ORDER BY date ASC LIMIT 1")
+    cursor.execute("SELECT date FROM golddss ORDER BY date ASC LIMIT 1")
     first_date_row = cursor.fetchone()
     if first_date_row:
         first_date_str = first_date_row[0]
@@ -79,21 +80,20 @@ def getDate():
         current_date = today
         while current_date >= first_date:
             current_date_str = current_date.strftime("%d/%m/%Y")
-            check_date_query = "SELECT COUNT(*) FROM test_dss WHERE date = %s"
+            check_date_query = "SELECT COUNT(*) FROM golddss WHERE date = %s"
             cursor.execute(check_date_query, (current_date_str,))
             if cursor.fetchone()[0] == 0:
                 date_list.append(current_date_str)
                 print(f"Đã thêm ngày: {current_date_str}\n")
             current_date -= timedelta(days=1)
     cursor.close()
-    connection.close()
     return date_list    
 def connectDB(data,driver):
         # Thông tin kết nối
     try:
         if connection.is_connected():
             print("Kết nối thành công!")
-            deleteDB()
+            # deleteDB()
             insertDB(driver)
             getData(data)
         else:
@@ -123,6 +123,6 @@ if __name__=='__main__':
         "database": "dss"
     }
     connection = mysql.connector.connect(**config)
-    # connectDB('golddss',driver)
-    for i in getDate():
-        print(i)
+    connectDB('golddss',driver)
+    # for i in getDate():
+    #     print(i)
