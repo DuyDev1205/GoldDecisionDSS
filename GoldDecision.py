@@ -23,10 +23,10 @@ def findHeader(driver):
     for th_element in th_elements:
         headers.append(th_element.text)
     return headers
-def insertDB(driver):
+def insertDB(driver,connection):
     khu_vuc=findHeader(driver)
     loai_vang, mua_vao, ban_ra = findBody(driver)
-    date=getDate()
+    date=getDate(connection)
     cursor = connection.cursor()
     querry="INSERT INTO golddss (date,Khu_vuc, Loai_vang, Mua_vao, Ban_ra) VALUES (%s,%s, %s, %s, %s)"
     reset_count="ALTER TABLE golddss AUTO_INCREMENT = 1"
@@ -40,7 +40,7 @@ def insertDB(driver):
             cursor.execute(querry,(date[i],khu_vuc[j],loai_vang[i],mua_vao[i],ban_ra[i]))
     connection.commit()
     print(cursor.rowcount, "record(s) were inserted.")
-def getData(data):
+def getData(connection):
     cursor = connection.cursor()
     cursor.execute(f"SELECT * FROM golddss ORDER BY date ASC LIMIT 1")
     rows = cursor.fetchall()
@@ -53,7 +53,7 @@ def deleteDB():
     cursor.execute(delete_query)
     connection.commit()
     print("Đã xóa toàn bộ dữ liệu từ bảng golddss thành công!")
-def getDate():
+def getDate(connection):
     date_list = []
     # Tạo đối tượng cursor
     cursor = connection.cursor()
@@ -88,14 +88,14 @@ def getDate():
             current_date -= timedelta(days=1)
     cursor.close()
     return date_list    
-def connectDB(data,driver):
+def connectDB(data,driver,connection):
         # Thông tin kết nối
     try:
         if connection.is_connected():
             print("Kết nối thành công!")
             # deleteDB()
-            insertDB(driver)
-            getData(data)
+            insertDB(driver,connection)
+            getData(connection)
         else:
             print("Kết nối không thành công!")
     except mysql.connector.Error as error:
@@ -123,6 +123,6 @@ if __name__=='__main__':
         "database": "dss"
     }
     connection = mysql.connector.connect(**config)
-    connectDB('golddss',driver)
+    connectDB('golddss',driver,connection)
     # for i in getDate():
     #     print(i)
