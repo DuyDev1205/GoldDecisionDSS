@@ -4,7 +4,7 @@ from selenium.webdriver.common.by import By
 from time import sleep
 from datetime import datetime, timedelta
 
-def findBody(driver):
+def golPrice(driver):
     loai_vang, mua_vao, ban_ra = [], [], []  # Di chuyển khởi tạo danh sách ra khỏi vòng lặp
     tr_elements = driver.find_elements(By.XPATH, "//table[@class='table table-radius table-hover']//tr")
     # In ra nội dung của phần tử đầu tiên
@@ -25,7 +25,7 @@ def findHeader(driver):
     return headers
 def insertDB(driver,connection):
     khu_vuc=findHeader(driver)
-    loai_vang, mua_vao, ban_ra = findBody(driver)
+    loai_vang, mua_vao, ban_ra = golPrice(driver)
     date=getDate(connection)
     cursor = connection.cursor()
     querry="INSERT INTO golddss (date,Khu_vuc, Loai_vang, Mua_vao, Ban_ra) VALUES (%s,%s, %s, %s, %s)"
