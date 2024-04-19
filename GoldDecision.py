@@ -106,6 +106,17 @@ def connectDB(data,driver,connection):
         if 'connection' in locals() and connection.is_connected():
             connection.close()
             print("Kết nối đã được đóng.")
+def getExchangeRate(driver,date_list):
+    date_input=driver.find_element(By.XPATH, '//*[@id="datePicker"]')
+    ex_list=[]
+    for date in date_list:
+        date_input.clear()
+        date_input.send_keys(date.replace('/',''))
+        sleep(0.2)
+        data_element=driver.find_element(By.XPATH, '//*[@id="content"]//table/tbody/tr[1]/td[5]')
+        ex_list.append(data_element.text)
+    return ex_list
+        
 if __name__=='__main__':
     # Tạo một cấu hình cho trình duyệt Chrome
     chrome_options = webdriver.ChromeOptions()
